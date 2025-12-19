@@ -1,0 +1,38 @@
+name: Update Mark Six Data
+
+on:
+  schedule:
+    # Run at 14:00 UTC (10:00 PM Hong Kong Time) every Tue, Thu, Sat, Sun
+    # (Mark Six draws are usually Tue/Thu/Sat, sometimes Sun)
+    - cron: '0 14 * * 0,2,4,6'
+  workflow_dispatch: # Allows you to run it manually button click
+
+permissions:
+  contents: write
+
+jobs:
+  scrape-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Puppeteer
+        run: npm install puppeteer
+
+      - name: Run Scraper
+        run: node scraper.js
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add data.json
+          # Only commit if data.json actually changed
+          git commit -m "Auto-update Mark Six data" || echo "No changes to commit"
+          git push
