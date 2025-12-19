@@ -2,7 +2,10 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: "new" });
+  const browser = await puppeteer.launch({
+  headless: "new",
+  args: ['--no-sandbox', '--disable-setuid-sandbox'] // <--- Add this line
+});
   const page = await browser.newPage();
 
   // Use the Summary View URL you provided
@@ -64,3 +67,4 @@ const fs = require('fs');
 
   await browser.close();
 })();
+
