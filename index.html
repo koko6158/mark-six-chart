@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mark Six Matrix</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d32f2f">
+        <style>
+    /* Reset */
+    body { margin: 0; font-family: 'Arial Narrow', sans-serif; background: #fff; font-size: 9px; }
+    
+    .table-container {
+      height: 100vh; overflow: auto; position: relative; display: flex; flex-direction: column;
+    }
+
+    table {
+      border-collapse: collapse; white-space: nowrap; table-layout: fixed;
+    }
+
+    /* Footer */
+    tfoot th {
+      position: sticky; bottom: 0;
+      background: #d32f2f; color: white;
+      padding: 0; height: 15px; line-height: 15px; /* 15px Height */
+      font-size: 8px; z-index: 20; border-top: 1px solid #b71c1c;
+    }
+
+    /* Sticky Columns */
+    th.sticky-left, td.sticky-left {
+      position: sticky; left: 0; z-index: 15;
+      background: inherit; border-right: 1px solid #ccc;
+      width: 28px !important; min-width: 28px; max-width: 28px; /* Extreme Date Width */
+      overflow: hidden; text-overflow: clip;
+    }
+    th.sticky-left-2, td.sticky-left-2 {
+      position: sticky; left: 28px; z-index: 15;
+      background: inherit; border-right: 1px solid #ccc;
+      width: 18px !important; min-width: 18px; max-width: 18px; /* Extreme ID Width */
+      overflow: hidden;
+    }
+
+    tfoot th.sticky-left, tfoot th.sticky-left-2 { z-index: 30; background: #d32f2f; }
+
+    /* Cells */
+    td {
+      text-align: center; padding: 0; margin: 0;
+      border-bottom: 1px solid #e0e0e0; border-right: 1px solid #f0f0f0;
+      width: 15px; min-width: 15px; /* 15px Width */
+      height: 15px; /* 15px Height */
+      line-height: 15px; color: #333; font-size: 8px;
+    }
+
+    tbody tr:nth-child(even) { background-color: #f2f2f2; }
+    tbody tr:nth-child(odd) { background-color: #ffffff; }
+
+    /* Micro Ball */
+    .ball {
+      width: 13px; height: 13px; border-radius: 50%;
+      display: inline-block; vertical-align: top; /* Align to top of cell */
+      line-height: 13px; 
+      font-weight: normal; font-size: 8px; color: white;
+      margin-top: 1px; /* Optical center */
+    }
+    .ball.black { background-color: #000; }
+    .ball.special.red { background-color: #e74c3c; }
+    .ball.special.blue { background-color: #3498db; }
+    .ball.special.green { background-color: #27ae60; }
+    
+    #error-msg { display: none; color: red; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div id="error-msg"></div>
+
+<div class="table-container">
+  <table id="matrixTable">
+    <tbody>
+      <!-- Data Rows injected by JS -->
+    </tbody>
+    <tfoot>
+      <!-- Footer Row injected by JS (Sticky Bottom) -->
+    </tfoot>
+  </table>
+</div>
+
+<script>
+  // HKJC Color Map
+  const colorMap = {
+    red: [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45, 46],
+    blue: [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 47, 48],
+    green: [5, 6, 11, 16, 17, 21, 22, 27, 28, 32, 33, 38, 39, 43, 44, 49]
+  };
+
+  function getSpecialColor(n) {
+    if (colorMap.red.includes(n)) return 'red';
+    if (colorMap.blue.includes(n)) return 'blue';
+    return 'green';
+  }
+
+  function formatDate(str) {
+    const d = new Date(str);
+    if(isNaN(d.getTime())) return str.split(',')[0].substring(0,5); 
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}`;
+  }
+
+  async function init() {
+    try {
+        const response = await fetch('data.json');
+        if (!response.ok) throw new Error(`Failed to load data.json (HTTP ${response.status})`);
+        const draws = await response.json();
+        
+        if (!Array.isArray(draws) || draws.length === 0) throw new Error("data.json is empty");
+
+        // Instruction #5: Last 20 draws
+        // Sort: Earliest (index 0) to Latest (index 19)
+        // Since scraper saves [Latest, ... Oldest], we slice first then REVERSE
+        const displayDraws = draws.slice(0, 20).reverse();
+
+        const table = document.getElementById('matrixTable');
+        const tfoot = table.querySelector('tfoot'); // Changed from thead
+        const tbody = table.querySelector('tbody');
+
+        // 1. Build Footer (Sticky Bottom): Date | ID | 1..49 | ID | Date
+                // Update widths to match CSS
+        let footerHTML = `
+          <tr style="height: 15px;">
+            <th class="sticky-left" style="width:28px;">Dat</th>
+            <th class="sticky-left-2" style="width:18px;">#</th>
+        `;
+        
+        for(let i=1; i<=49; i++) {
+          footerHTML += `<th style="width:15px;">${i}</th>`;
+        }
+        
+        footerHTML += `
+          <th style="width:18px; border-left:1px solid #ddd;">#</th>
+          <th style="width:28px;">Dat</th>
+          </tr>
+        `;
+        tfoot.innerHTML = footerHTML;
+
+        // 2. Build Rows (Earliest -> Latest)
+        displayDraws.forEach(d => {
+          const tr = document.createElement('tr');
+          const shortDate = formatDate(d.date);
+
+          // Left Columns
+          let rowHTML = `
+            <td class="sticky-left"><b>${shortDate}</b></td>
+            <td class="sticky-left-2"><b>${d.id}</b></td>
+          `;
+
+          // Numbers 1-49
+          for(let num=1; num<=49; num++) {
+            let cellContent = '';
+            const mainNums = d.main.map(n => Number(n));
+            const specialNum = Number(d.special);
+            const isMain = mainNums.includes(num);
+            const isSpecial = specialNum === num;
+
+            if (isMain) {
+              cellContent = `<div class="ball black">${num}</div>`;
+            } else if (isSpecial) {
+              const color = getSpecialColor(num);
+              cellContent = `<div class="ball special ${color}">${num}</div>`;
+            }
+            rowHTML += `<td>${cellContent}</td>`;
+          }
+
+          // Right Columns
+          rowHTML += `
+            <td style="border-left:2px solid #ddd;"><b>${d.id}</b></td>
+            <td><b>${shortDate}</b></td>
+          `;
+
+          tr.innerHTML = rowHTML;
+          tbody.appendChild(tr);
+        });
+        
+        // Auto-scroll to bottom to show latest draw immediately
+        setTimeout(() => {
+           const container = document.querySelector('.table-container');
+           container.scrollTop = container.scrollHeight;
+        }, 100);
+
+    } catch (err) {
+        const msgDiv = document.getElementById('error-msg');
+        msgDiv.style.display = 'block';
+        msgDiv.innerHTML = `<h3>Error: ${err.message}</h3><p>Make sure to run a local server (npx serve .)</p>`;
+    }
+  }
+
+  init();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
