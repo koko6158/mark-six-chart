@@ -109,7 +109,8 @@
 
   async function init() {
     try {
-        const response = await fetch('data.json');
+        const today = new Date().toISOString().slice(0,10); // "2025-12-23"
+        const response = await fetch('data.json?v=' + today, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Failed to load data.json (HTTP ${response.status})`);
         const draws = await response.json();
         
@@ -191,4 +192,5 @@
 </script>
 </body>
 </html>
+
 
