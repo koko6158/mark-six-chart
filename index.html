@@ -128,20 +128,15 @@
                 // Update widths to match CSS
         let footerHTML = `
           <tr style="height: 15px;">
-            <th class="sticky-left" style="width:28px;">Dat</th>
-            <th class="sticky-left-2" style="width:18px;">#</th>
+          <th class="sticky-left" style="width:28px;">Dat</th>
+          <th class="sticky-left-2" style="width:18px;">#</th>
         `;
-        
         for(let i=1; i<=49; i++) {
           footerHTML += `<th style="width:15px;">${i}</th>`;
         }
-        
-        footerHTML += `
-          <th style="width:18px; border-left:1px solid #ddd;">#</th>
-          <th style="width:28px;">Dat</th>
-          </tr>
-        `;
+        footerHTML += `</tr>`;
         tfoot.innerHTML = footerHTML;
+
 
         // 2. Build Rows (Earliest -> Latest)
         displayDraws.forEach(d => {
@@ -171,12 +166,6 @@
             rowHTML += `<td>${cellContent}</td>`;
           }
 
-          // Right Columns
-          rowHTML += `
-            <td style="border-left:2px solid #ddd;"><b>${d.id}</b></td>
-            <td><b>${shortDate}</b></td>
-          `;
-
           tr.innerHTML = rowHTML;
           tbody.appendChild(tr);
         });
@@ -202,3 +191,4 @@
 </script>
 </body>
 </html>
+
