@@ -5,7 +5,7 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll([
       './',
-      './index.html',
+      // './index.html',
       './data.json',
       './manifest.json',
       './icon.png'  // <--- ADD THIS
@@ -32,3 +32,4 @@ self.addEventListener('fetch', (e) => {
     caches.match(e.request).then((response) => response || fetch(e.request))
   );
 });
+
